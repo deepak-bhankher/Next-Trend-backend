@@ -32,7 +32,6 @@ const userSchema = new mongoose.Schema(
 // Password ko save karne se pehle automatically encrypt (hash) kar dega
 userSchema.pre("save", async function (next) {
   if (!this.password || !this.isModified("password")) {
-    next();
     return;
   }
   const salt = await bcrypt.genSalt(10);
