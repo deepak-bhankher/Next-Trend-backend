@@ -1,5 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 // Login token banata hai aur cookie mein bhej deta hai
 const generateToken = (res, userId) => {
@@ -86,9 +89,54 @@ const getUserProfile = async (req, res) => {
   });
 };
 
+
+
+// @desc    Google se login/register karo
+// @route   POST /api/users/google-login
+const googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Naya user banao (Google se pehli baar login)
+      user = await User.create({
+        name,
+        email,
+        googleId,
+      });
+    } else if (!user.googleId) {
+      // Existing user (jo pehle normal register hua tha) ab Google se link ho raha hai
+      user.googleId = googleId;
+      await user.save();
+    }
+
+    generateToken(res, user._id);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.status(401).json({ message: "Google authentication failed" });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
   getUserProfile,
+  googleLogin,
 };

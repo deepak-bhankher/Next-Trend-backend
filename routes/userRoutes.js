@@ -4,6 +4,7 @@ const {
   loginUser,
   logoutUser,
   getUserProfile,
+  googleLogin
 } = require("../controllers/userController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -13,5 +14,6 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 router.get("/profile", protect, getUserProfile);
+router.post("/google-login", googleLogin);
 
 module.exports = router;
