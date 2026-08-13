@@ -1,4 +1,6 @@
 const Order = require("../models/Order");
+const User = require("../models/User");
+const sendEmail = require("../utils/sendEmail");
 
 // @desc    Naya order banao (checkout ke waqt)
 // @route   POST /api/orders
@@ -18,6 +20,25 @@ const addOrderItems = async (req, res) => {
     });
 
     const createdOrder = await order.save();
+    sendEmail(
+      process.env.OWNER_EMAIL,
+      "🛍️ New Order Received!",
+      `<div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+    <h2>New Order on Next Trend!</h2>
+    <p><strong>Order ID:</strong> ${createdOrder._id}</p>
+    <p><strong>Total:</strong> ₹${createdOrder.totalPrice}</p>
+    <p><strong>Items:</strong></p>
+    <ul>
+      ${createdOrder.orderItems.map((item) => `<li>${item.name} (Size ${item.size}) x${item.qty} — ₹${item.price}</li>`).join("")}
+    </ul>
+    <p><strong>Shipping Address:</strong><br/>
+      ${createdOrder.shippingAddress.address}, ${createdOrder.shippingAddress.city}<br/>
+      ${createdOrder.shippingAddress.postalCode}, ${createdOrder.shippingAddress.country}<br/>
+      Phone: ${createdOrder.shippingAddress.phone}
+    </p>
+    <p>Login to the admin dashboard to view full details.</p>
+  </div>`,
+    );
     res.status(201).json(createdOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -41,7 +62,7 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
       "user",
-      "name email"
+      "name email",
     );
     if (order) {
       res.json(order);
@@ -53,8 +74,67 @@ const getOrderById = async (req, res) => {
   }
 };
 
+// @desc    Sabhi orders laao (sirf admin)
+// @route   GET /api/orders/all
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({})
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Order status update karo (sirf admin)
+// @route   PUT /api/orders/:id/status
+const updateOrderStatus = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const { status } = req.body;
+
+    if (status === "Delivered") {
+      order.isDelivered = true;
+      order.deliveredAt = Date.now();
+    } else if (status === "Shipped") {
+      order.isDelivered = false;
+      order.status = "Shipped";
+    } else {
+      order.isDelivered = false;
+      order.status = "Processing";
+    }
+
+    const updatedOrder = await order.save();
+    if (status === "Delivered") {
+      const customer = await User.findById(order.user);
+      if (customer) {
+        sendEmail(
+          customer.email,
+          "📦 Your Order Has Been Delivered!",
+          `<div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+        <h2>Your order has arrived! 🎉</h2>
+        <p><strong>Order ID:</strong> ${updatedOrder._id}</p>
+        <p>Your order has been successfully delivered. We hope you love your new shoes!</p>
+        <p>Thank you for shopping with Next Trend.</p>
+        <p><strong>Team Next Trend</strong></p>
+      </div>`,
+        );
+      }
+    }
+    res.json(updatedOrder);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 module.exports = {
   addOrderItems,
   getMyOrders,
   getOrderById,
+  getAllOrders,
+  updateOrderStatus,
 };
