@@ -147,7 +147,8 @@ const storeSettingSchema = new mongoose.Schema(
           "Your ultimate destination for curated sneakers, running icons, and everyday performance footwear.",
       },
       email: { type: String, default: "support@nexttrend.com" },
-      phone: { type: String, default: "+91 98765 43210" },
+      phone: { type: String, default: "+91 90533 77725" },
+      whatsapp: { type: String, default: "+91 90533 77725" },
       address: {
         type: String,
         default: "123 Sneaker Boulevard, Fashion District, New Delhi, India",

@@ -101,6 +101,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (status === "Delivered") {
       order.isDelivered = true;
+      order.status = "Delivered";
       order.deliveredAt = Date.now();
     } else if (status === "Shipped") {
       order.isDelivered = false;
@@ -141,9 +142,17 @@ const getAdminStats = async (req, res) => {
     const orders = await Order.find();
     const totalRevenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
-    const pendingOrders = await Order.countDocuments({ status: "Processing" });
-    const shippedOrders = await Order.countDocuments({ status: "Shipped" });
-    const deliveredOrders = await Order.countDocuments({ status: "Delivered" });
+    const deliveredOrders = await Order.countDocuments({
+      $or: [{ status: "Delivered" }, { isDelivered: true }],
+    });
+    const shippedOrders = await Order.countDocuments({
+      status: "Shipped",
+      isDelivered: { $ne: true },
+    });
+    const pendingOrders = await Order.countDocuments({
+      $or: [{ status: "Processing" }, { status: { $exists: false } }, { status: null }],
+      isDelivered: { $ne: true },
+    });
 
     const totalProducts = await Product.countDocuments();
     const totalUsers = await User.countDocuments({ isAdmin: { $ne: true } });
