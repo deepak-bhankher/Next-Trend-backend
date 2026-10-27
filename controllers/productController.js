@@ -5,14 +5,20 @@ const Product = require("../models/Product");
 const getProducts = async (req, res) => {
   try {
     const keyword = req.query.keyword
-      ? { name: { $regex: req.query.keyword, $options: "i" } }
+      ? {
+          $or: [
+            { name: { $regex: req.query.keyword, $options: "i" } },
+            { brand: { $regex: req.query.keyword, $options: "i" } },
+            { category: { $regex: req.query.keyword, $options: "i" } },
+          ],
+        }
       : {};
 
     const category = req.query.category
-      ? { category: req.query.category }
+      ? { category: { $regex: new RegExp(`^${req.query.category}$`, "i") } }
       : {};
 
-    const products = await Product.find({ ...keyword, ...category });
+    const products = await Product.find({ ...keyword, ...category }).sort({ createdAt: -1 });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });

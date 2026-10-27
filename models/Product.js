@@ -18,6 +18,14 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    originalPrice: {
+      type: Number,
+      default: 0,
+    },
+    badge: {
+      type: String,
+      default: "",
+    },
     images: {
       type: [String], // image URLs ki list
       required: true,

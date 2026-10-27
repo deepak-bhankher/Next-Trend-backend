@@ -41,7 +41,7 @@ const importData = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     await Product.insertMany(products);
-    console.log(`✅ ${products.length} products added successfully! (existing products kept)`);
+    console.log(` ${products.length} products added successfully! (existing products kept)`);
     process.exit();
   } catch (error) {
     console.error(`Error: ${error.message}`);

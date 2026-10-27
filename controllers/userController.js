@@ -15,6 +15,7 @@ const generateToken = (res, userId) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 din
   });
+  return token;
 };
 
 // @desc    Naya user register karo
@@ -41,12 +42,13 @@ const registerUser = async (req, res) => {
     <p><strong>Team Next Trend</strong></p>
   </div>`,
     );
-    generateToken(res, user._id);
+    const token = generateToken(res, user._id);
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      token,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -61,12 +63,13 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-      generateToken(res, user._id);
+      const token = generateToken(res, user._id);
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        token,
       });
     } else {
       res.status(401).json({ message: "Invalid email or password" });
@@ -141,12 +144,13 @@ const googleLogin = async (req, res) => {
       await user.save();
     }
 
-    generateToken(res, user._id);
+    const authToken = generateToken(res, user._id);
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      token: authToken,
     });
   } catch (error) {
     console.error("Google login error:", error);

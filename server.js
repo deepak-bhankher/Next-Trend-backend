@@ -34,9 +34,15 @@ app.get("/", (req, res) => {
   res.send("Shoe Store API is running...");
 });
 
+const path = require("path");
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/settings", require("./routes/settingRoutes"));
+app.use("/api/upload", require("./routes/uploadRoutes"));
 
 app.use(notFound);
 app.use(errorHandler);

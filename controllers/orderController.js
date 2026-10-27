@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const User = require("../models/User");
+const Product = require("../models/Product");
 const sendEmail = require("../utils/sendEmail");
 
 // @desc    Naya order banao (checkout ke waqt)
@@ -131,10 +132,63 @@ const updateOrderStatus = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// @desc    Admin stats aur analytics laao
+// @route   GET /api/orders/stats
+const getAdminStats = async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments();
+    const orders = await Order.find();
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+
+    const pendingOrders = await Order.countDocuments({ status: "Processing" });
+    const shippedOrders = await Order.countDocuments({ status: "Shipped" });
+    const deliveredOrders = await Order.countDocuments({ status: "Delivered" });
+
+    const totalProducts = await Product.countDocuments();
+    const totalUsers = await User.countDocuments({ isAdmin: { $ne: true } });
+
+    const recentOrders = await Order.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.json({
+      totalOrders,
+      totalRevenue,
+      pendingOrders,
+      shippedOrders,
+      deliveredOrders,
+      totalProducts,
+      totalUsers,
+      recentOrders,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Order delete karo (sirf admin)
+// @route   DELETE /api/orders/:id
+const deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    await order.deleteOne();
+    res.json({ message: "Order deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   addOrderItems,
   getMyOrders,
   getOrderById,
   getAllOrders,
   updateOrderStatus,
+  getAdminStats,
+  deleteOrder,
 };
